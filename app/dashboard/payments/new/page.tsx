@@ -28,7 +28,7 @@ type Student = {
     name: string;
     phone: string;
     course: string;
-    enrollmentId?: string;
+    enrollmentId?: string | null;
 };
 
 // Balance Type

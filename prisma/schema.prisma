@@ -1,0 +1,117 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  students  Student[]
+  courses   Course[]
+}
+
+model Student {
+  id          Int      @id @default(autoincrement())
+  enrollmentId String?
+  name        String
+  phone       String
+  email       String?
+  caste       String? // Deprecated in favor of community/religion but keeping for compatibility if needed, or mapping
+  whatsapp    String?
+  course      String
+  dateOfJoin  DateTime @default(now())
+  status      String   @default("Active") // Active, Completed, Dropped
+  
+  // New Fields
+  fatherName       String?
+  fatherOccupation String?
+  dob              String? // DD/MM/YYYY
+  address          String?
+  pincode          String?
+  gender           String?
+  aadhar           String? // Unique? Often yes, but optional for now to avoid migration hell if duplicates exist
+  religion         String?
+  community        String?
+  qualification    String?
+  employmentStatus String?
+  income           Float?
+  reason           String?
+  source           String?
+  nextPaymentDate  DateTime? // For automated reminders
+
+  // Fee Details for EMI
+  totalFee         Float    @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payments    Payment[]
+  invoices    Invoice[]
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([phone, userId])
+  @@unique([enrollmentId, userId])
+}
+
+model Course {
+  id        Int      @id @default(autoincrement())
+  name      String
+  fees      Float
+  duration  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([name, userId])
+}
+
+model Payment {
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  mode        String   // Cash, UPI, Card, Online
+  date        DateTime @default(now())
+  status      String   @default("Paid") // Paid, Pending
+  
+  course      String?  // Snapshot of course name
+  
+  studentId   Int
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  invoice     Invoice?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Invoice {
+  id          Int      @id @default(autoincrement())
+  number      String   @unique // Format: INV-YYYY-001
+  date        DateTime @default(now())
+  url         String?  // Path to PDF if saved
+  
+  paymentId   Int      @unique
+  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  
+  studentId   Int
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
